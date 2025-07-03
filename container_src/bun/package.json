@@ -1,0 +1,13 @@
+{
+  "name": "hono-bun-container",
+  "version": "1.0.0",
+  "description": "Hono app for Bun runtime",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun run app.js"
+  },
+  "dependencies": {
+    "hono": "^4.8.2"
+  }
+}

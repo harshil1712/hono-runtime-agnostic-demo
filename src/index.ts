@@ -1,70 +1,123 @@
-import { Container, loadBalance, getContainer } from "@cloudflare/containers";
+import { Container, getContainer } from "@cloudflare/containers";
 import { Hono } from "hono";
 
-export class MyContainer extends Container {
+export class NodeContainer extends Container {
   // Port the container listens on (default: 8080)
   defaultPort = 8080;
   // Time before container sleeps due to inactivity (default: 30s)
   sleepAfter = "2m";
   // Environment variables passed to the container
   envVars = {
-    MESSAGE: "I was passed in via the container class!",
+    RUNTIME: "node",
+    MESSAGE: "Running Hono on Node.js runtime!",
   };
 
   // Optional lifecycle hooks
   override onStart() {
-    console.log("Container successfully started");
+    console.log("Node container successfully started");
   }
 
   override onStop() {
-    console.log("Container successfully shut down");
+    console.log("Node container successfully shut down");
   }
 
   override onError(error: unknown) {
-    console.log("Container error:", error);
+    console.log("Node container error:", error);
   }
 }
 
+export class BunContainer extends Container {
+  // Port the container listens on (default: 8080)
+  defaultPort = 8080;
+  // Time before container sleeps due to inactivity (default: 30s)
+  sleepAfter = "2m";
+  // Environment variables passed to the container
+  envVars = {
+    RUNTIME: "bun",
+    MESSAGE: "Running Hono on Bun runtime!",
+  };
+
+  // Optional lifecycle hooks
+  override onStart() {
+    console.log("Bun container successfully started");
+  }
+
+  override onStop() {
+    console.log("Bun container successfully shut down");
+  }
+
+  override onError(error: unknown) {
+    console.log("Bun container error:", error);
+  }
+}
+
+
 // Create Hono app with proper typing for Cloudflare Workers
 const app = new Hono<{
-  Bindings: { MY_CONTAINER: DurableObjectNamespace<MyContainer> };
+  Bindings: { 
+    Node_CONTAINER: DurableObjectNamespace<NodeContainer>;
+    Bun_CONTAINER: DurableObjectNamespace<BunContainer>;
+  };
 }>();
 
 // Home route with available endpoints
 app.get("/", (c) => {
   return c.text(
-    "Available endpoints:\n" +
-      "GET /container/<ID> - Start a container for each ID with a 2m timeout\n" +
-      "GET /lb - Load balance requests over multiple containers\n" +
-      "GET /error - Start a container that errors (demonstrates error handling)\n" +
-      "GET /singleton - Get a single specific container instance",
+    "Hono Multi-Runtime Demo\n" +
+      "Available endpoints:\n" +
+      "GET /node - Run Hono on Node.js runtime\n" +
+      "GET /bun - Run Hono on Bun runtime\n\n" +
+      "Each endpoint demonstrates Hono running in different JavaScript runtimes!",
   );
 });
 
-// Route requests to a specific container using the container ID
-app.get("/container/:id", async (c) => {
-  const id = c.req.param("id");
-  const containerId = c.env.MY_CONTAINER.idFromName(`/container/${id}`);
-  const container = c.env.MY_CONTAINER.get(containerId);
-  return await container.fetch(c.req.raw);
+// Route requests to Node.js container (including sub-paths)
+app.all("/node/*", async (c) => {
+  const container = getContainer(c.env.Node_CONTAINER, "node-runtime");
+  // Extract the sub-path after /node
+  const subPath = c.req.path.replace("/node", "") || "/";
+  const containerUrl = new URL(`http://localhost:8080${subPath}`);
+  const containerRequest = new Request(containerUrl, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+  });
+  return await container.fetch(containerRequest);
 });
 
-// Demonstrate error handling - this route forces a panic in the container
-app.get("/error", async (c) => {
-  const container = getContainer(c.env.MY_CONTAINER, "error-test");
-  return await container.fetch(c.req.raw);
+// Route requests to Node.js container root
+app.get("/node", async (c) => {
+  const container = getContainer(c.env.Node_CONTAINER, "node-runtime");
+  const containerUrl = new URL("http://localhost:8080/");
+  const containerRequest = new Request(containerUrl, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+  });
+  return await container.fetch(containerRequest);
 });
 
-// Load balance requests across multiple containers
-app.get("/lb", async (c) => {
-  const container = await loadBalance(c.env.MY_CONTAINER, 3);
-  return await container.fetch(c.req.raw);
+// Route requests to Bun container (including sub-paths)
+app.all("/bun/*", async (c) => {
+  const container = getContainer(c.env.Bun_CONTAINER, "bun-runtime");
+  // Extract the sub-path after /bun
+  const subPath = c.req.path.replace("/bun", "") || "/";
+  const containerUrl = new URL(`http://localhost:8080${subPath}`);
+  const containerRequest = new Request(containerUrl, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+  });
+  return await container.fetch(containerRequest);
 });
 
-// Get a single container instance (singleton pattern)
-app.get("/singleton", async (c) => {
-  const container = getContainer(c.env.MY_CONTAINER);
-  return await container.fetch(c.req.raw);
+// Route requests to Bun container root
+app.get("/bun", async (c) => {
+  const container = getContainer(c.env.Bun_CONTAINER, "bun-runtime");
+  const containerUrl = new URL("http://localhost:8080/");
+  const containerRequest = new Request(containerUrl, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+  });
+  return await container.fetch(containerRequest);
 });
+
 
 export default app;

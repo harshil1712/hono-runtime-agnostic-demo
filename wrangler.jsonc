@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "containers-test",
+	"name": "hono-talk-containers",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-05-23",
 	"compatibility_flags": [
@@ -15,24 +15,35 @@
 	},
 	"containers": [
 		{
-			"class_name": "MyContainer",
-			"image": "./Dockerfile",
-			"max_instances": 10,
-			"name": "hello-containers"
+			"class_name": "NodeContainer",
+			"image": "./container_src/node/Dockerfile",
+			"name": "node-container",
+			"max_instances": 5
+		},
+		{
+			"class_name": "BunContainer",
+			"image": "./container_src/bun/Dockerfile",
+			"name": "bun-container",
+			"max_instances": 5
 		}
 	],
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "MyContainer",
-				"name": "MY_CONTAINER"
+				"class_name": "NodeContainer",
+				"name": "Node_CONTAINER"
+			},
+			{
+				"class_name": "BunContainer",
+				"name": "Bun_CONTAINER"
 			}
 		]
 	},
 	"migrations": [
 		{
 			"new_sqlite_classes": [
-				"MyContainer"
+				"NodeContainer",
+				"BunContainer"
 			],
 			"tag": "v1"
 		}

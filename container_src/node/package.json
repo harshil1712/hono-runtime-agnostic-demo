@@ -1,0 +1,14 @@
+{
+  "name": "hono-node-container",
+  "version": "1.0.0",
+  "description": "Hono app for Node.js runtime",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "hono": "^4.8.2",
+    "@hono/node-server": "^1.12.0"
+  }
+}
