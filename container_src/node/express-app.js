@@ -1,17 +1,20 @@
-import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
+import express from 'express';
 import os from 'os';
 import process from 'process';
 
-const app = new Hono();
+const expressApp = express();
+
+// Middleware for JSON responses
+expressApp.use(express.json());
 
 // Get runtime information from environment variables
 const runtime = process.env.RUNTIME || 'node';
 const message = process.env.MESSAGE || 'Hello from Node.js container!';
 
 // Root route showing Node.js runtime info
-app.get('/', (c) => {
+expressApp.get('/', (req, res) => {
   const runtimeInfo = {
+    framework: 'Express',
     runtime: 'Node.js',
     version: process.version,
     platform: os.platform(),
@@ -20,22 +23,31 @@ app.get('/', (c) => {
     timestamp: new Date().toISOString(),
     uptime: `${process.uptime()}s`,
     memoryUsage: process.memoryUsage(),
-    userAgent: c.req.header('user-agent') || 'Unknown',
+    userAgent: req.get('User-Agent') || 'Unknown',
     nodeFeatures: [
       'CommonJS/ES Modules',
       'NPM ecosystem',
       'V8 JavaScript engine',
       'Libuv event loop',
       'Native addons support'
+    ],
+    expressFeatures: [
+      'Middleware system',
+      'Robust routing',
+      'Template engines',
+      'Static file serving',
+      'Error handling'
     ]
   };
   
-  return c.json(runtimeInfo);
+  res.json(runtimeInfo);
 });
 
 // Node.js specific endpoint
-app.get('/info', (c) => {
-  return c.json({
+expressApp.get('/info', (req, res) => {
+  res.json({
+    framework: 'Express',
+    runtime: 'Node.js',
     versions: process.versions,
     execPath: process.execPath,
     execArgv: process.execArgv,
@@ -43,12 +55,13 @@ app.get('/info', (c) => {
       NODE_ENV: process.env.NODE_ENV,
       npm_config_user_agent: process.env.npm_config_user_agent
     },
-    features: process.features
+    features: process.features,
+    expressVersion: express.version || 'Unknown'
   });
 });
 
 // Performance test endpoint
-app.get('/performance', async (c) => {
+expressApp.get('/performance', (req, res) => {
   const start = process.hrtime.bigint();
   
   // Simulate some work
@@ -60,7 +73,8 @@ app.get('/performance', async (c) => {
   const end = process.hrtime.bigint();
   const duration = Number(end - start) / 1000000; // Convert to milliseconds
   
-  return c.json({
+  res.json({
+    framework: 'Express',
     runtime: 'Node.js',
     operation: 'Sum 1M integers',
     result: sum,
@@ -69,10 +83,37 @@ app.get('/performance', async (c) => {
   });
 });
 
+// Middleware demonstration endpoint
+expressApp.get('/middleware', (req, res) => {
+  // Add custom headers via middleware
+  res.setHeader('X-Framework', 'Express');
+  res.setHeader('X-Runtime', 'Node.js');
+  
+  res.json({
+    framework: 'Express',
+    runtime: 'Node.js',
+    message: 'This demonstrates Express middleware capabilities',
+    requestInfo: {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      query: req.query
+    },
+    middlewareFeatures: [
+      'Request/Response modification',
+      'Authentication',
+      'Logging',
+      'CORS handling',
+      'Body parsing'
+    ]
+  });
+});
+
 // Health check endpoint
-app.get('/health', (c) => {
-  return c.json({
+expressApp.get('/health', (req, res) => {
+  res.json({
     status: 'healthy',
+    framework: 'Express',
     runtime: 'Node.js',
     version: process.version,
     uptime: `${process.uptime()}s`,
@@ -80,10 +121,4 @@ app.get('/health', (c) => {
   });
 });
 
-const port = parseInt(process.env.PORT || '8080');
-
-console.log(`Starting Node.js Hono server on port ${port}`);
-serve({
-  fetch: app.fetch,
-  port: port
-});
+export default expressApp;

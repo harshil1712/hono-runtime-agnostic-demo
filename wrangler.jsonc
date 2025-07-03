@@ -18,13 +18,15 @@
 			"class_name": "NodeContainer",
 			"image": "./container_src/node/Dockerfile",
 			"name": "node-container",
-			"max_instances": 5
+			"max_instances": 5,
+			"image_build_context": "./container_src/node"
 		},
 		{
 			"class_name": "BunContainer",
 			"image": "./container_src/bun/Dockerfile",
 			"name": "bun-container",
-			"max_instances": 5
+			"max_instances": 5,
+			"image_build_context": "./container_src/bun"
 		}
 	],
 	"durable_objects": {

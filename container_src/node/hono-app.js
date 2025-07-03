@@ -1,17 +1,17 @@
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
 import os from 'os';
 import process from 'process';
 
-const app = new Hono();
+const honoApp = new Hono();
 
 // Get runtime information from environment variables
 const runtime = process.env.RUNTIME || 'node';
 const message = process.env.MESSAGE || 'Hello from Node.js container!';
 
 // Root route showing Node.js runtime info
-app.get('/', (c) => {
+honoApp.get('/', (c) => {
   const runtimeInfo = {
+    framework: 'Hono',
     runtime: 'Node.js',
     version: process.version,
     platform: os.platform(),
@@ -34,8 +34,10 @@ app.get('/', (c) => {
 });
 
 // Node.js specific endpoint
-app.get('/info', (c) => {
+honoApp.get('/info', (c) => {
   return c.json({
+    framework: 'Hono',
+    runtime: 'Node.js',
     versions: process.versions,
     execPath: process.execPath,
     execArgv: process.execArgv,
@@ -48,7 +50,7 @@ app.get('/info', (c) => {
 });
 
 // Performance test endpoint
-app.get('/performance', async (c) => {
+honoApp.get('/performance', async (c) => {
   const start = process.hrtime.bigint();
   
   // Simulate some work
@@ -61,6 +63,7 @@ app.get('/performance', async (c) => {
   const duration = Number(end - start) / 1000000; // Convert to milliseconds
   
   return c.json({
+    framework: 'Hono',
     runtime: 'Node.js',
     operation: 'Sum 1M integers',
     result: sum,
@@ -70,9 +73,10 @@ app.get('/performance', async (c) => {
 });
 
 // Health check endpoint
-app.get('/health', (c) => {
+honoApp.get('/health', (c) => {
   return c.json({
     status: 'healthy',
+    framework: 'Hono', 
     runtime: 'Node.js',
     version: process.version,
     uptime: `${process.uptime()}s`,
@@ -80,10 +84,4 @@ app.get('/health', (c) => {
   });
 });
 
-const port = parseInt(process.env.PORT || '8080');
-
-console.log(`Starting Node.js Hono server on port ${port}`);
-serve({
-  fetch: app.fetch,
-  port: port
-});
+export default honoApp;

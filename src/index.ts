@@ -1,5 +1,7 @@
 import { Container, getContainer } from "@cloudflare/containers";
 import { Hono } from "hono";
+import { prettyJSON } from "hono/pretty-json";
+import workerApp from "./worker-app";
 
 export class NodeContainer extends Container {
   // Port the container listens on (default: 8080)
@@ -51,24 +53,55 @@ export class BunContainer extends Container {
   }
 }
 
-
 // Create Hono app with proper typing for Cloudflare Workers
 const app = new Hono<{
-  Bindings: { 
+  Bindings: {
     Node_CONTAINER: DurableObjectNamespace<NodeContainer>;
     Bun_CONTAINER: DurableObjectNamespace<BunContainer>;
   };
 }>();
+
+app.use(prettyJSON());
 
 // Home route with available endpoints
 app.get("/", (c) => {
   return c.text(
     "Hono Multi-Runtime Demo\n" +
       "Available endpoints:\n" +
-      "GET /node - Run Hono on Node.js runtime\n" +
-      "GET /bun - Run Hono on Bun runtime\n\n" +
-      "Each endpoint demonstrates Hono running in different JavaScript runtimes!",
+      "GET /worker - Run Hono on Cloudflare Workers runtime\n" +
+      "GET /node - Run Hono on Node.js runtime (container)\n" +
+      "GET /bun - Run Hono on Bun runtime (container)\n\n" +
+      "Compare the same Hono framework across three different JavaScript execution environments!\n\n" +
+      "Performance comparison:\n" +
+      "GET /worker/performance vs /node/performance vs /bun/performance\n\n" +
+      "Runtime details:\n" +
+      "GET /worker/info vs /node/info vs /bun/info"
   );
+});
+
+// Route requests to Cloudflare Workers (including sub-paths)
+app.all("/worker/*", async (c) => {
+  // Extract the sub-path after /worker
+  const subPath = c.req.path.replace("/worker", "") || "/";
+  const workerUrl = new URL(`http://localhost${subPath}`);
+  const workerRequest = new Request(workerUrl, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+    body: c.req.raw.body,
+    cf: c.req.raw.cf, // Pass through the Cloudflare object
+  });
+  return await workerApp.fetch(workerRequest, c.env, c.executionCtx);
+});
+
+// Route requests to Cloudflare Workers root
+app.get("/worker", async (c) => {
+  const workerUrl = new URL("http://localhost/");
+  const workerRequest = new Request(workerUrl, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+    cf: c.req.raw.cf, // Pass through the Cloudflare object
+  });
+  return await workerApp.fetch(workerRequest, c.env, c.executionCtx);
 });
 
 // Route requests to Node.js container (including sub-paths)
@@ -118,6 +151,5 @@ app.get("/bun", async (c) => {
   });
   return await container.fetch(containerRequest);
 });
-
 
 export default app;
