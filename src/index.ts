@@ -7,7 +7,7 @@ export class NodeContainer extends Container {
   // Port the container listens on (default: 8080)
   defaultPort = 8080;
   // Time before container sleeps due to inactivity (default: 30s)
-  sleepAfter = "2m";
+  sleepAfter = "15m";
   // Environment variables passed to the container
   envVars = {
     RUNTIME: "node",
@@ -32,7 +32,7 @@ export class BunContainer extends Container {
   // Port the container listens on (default: 8080)
   defaultPort = 8080;
   // Time before container sleeps due to inactivity (default: 30s)
-  sleepAfter = "2m";
+  sleepAfter = "15m";
   // Environment variables passed to the container
   envVars = {
     RUNTIME: "bun",
@@ -113,17 +113,19 @@ app.all("/node/*", async (c) => {
   const containerRequest = new Request(containerUrl, {
     method: c.req.method,
     headers: c.req.raw.headers,
+    body: c.req.raw.body,
   });
   return await container.fetch(containerRequest);
 });
 
 // Route requests to Node.js container root
-app.get("/node", async (c) => {
+app.all("/node", async (c) => {
   const container = getContainer(c.env.Node_CONTAINER, "node-runtime");
   const containerUrl = new URL("http://localhost:8080/");
   const containerRequest = new Request(containerUrl, {
     method: c.req.method,
     headers: c.req.raw.headers,
+    body: c.req.raw.body,
   });
   return await container.fetch(containerRequest);
 });
@@ -137,17 +139,19 @@ app.all("/bun/*", async (c) => {
   const containerRequest = new Request(containerUrl, {
     method: c.req.method,
     headers: c.req.raw.headers,
+    body: c.req.raw.body,
   });
   return await container.fetch(containerRequest);
 });
 
 // Route requests to Bun container root
-app.get("/bun", async (c) => {
+app.all("/bun", async (c) => {
   const container = getContainer(c.env.Bun_CONTAINER, "bun-runtime");
   const containerUrl = new URL("http://localhost:8080/");
   const containerRequest = new Request(containerUrl, {
     method: c.req.method,
     headers: c.req.raw.headers,
+    body: c.req.raw.body,
   });
   return await container.fetch(containerRequest);
 });

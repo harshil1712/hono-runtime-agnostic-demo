@@ -92,4 +92,12 @@ workerApp.get("/health", (c) => {
   });
 });
 
+workerApp.post("/echo", async (c) => {
+  const body = await c.req.json();
+  return c.json({
+    message: "Echo from Cloudflare Workers",
+    body: body,
+  });
+});
+
 export default workerApp;

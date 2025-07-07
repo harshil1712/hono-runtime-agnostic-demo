@@ -128,6 +128,14 @@ app.get('/health', (c) => {
   });
 });
 
+app.post('/echo', async (c) => {
+  const body = await c.req.json();
+  return c.json({
+    message: 'Echo from Bun container',
+    body: body
+  });
+});
+
 const port = parseInt(process.env.PORT || '8080');
 
 console.log(`Starting Bun Hono server on port ${port}`);

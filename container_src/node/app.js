@@ -29,7 +29,7 @@ app.get('/', (c) => {
       'Native addons support'
     ]
   };
-  
+
   return c.json(runtimeInfo);
 });
 
@@ -50,16 +50,16 @@ app.get('/info', (c) => {
 // Performance test endpoint
 app.get('/performance', async (c) => {
   const start = process.hrtime.bigint();
-  
+
   // Simulate some work
   let sum = 0;
   for (let i = 0; i < 1000000; i++) {
     sum += i;
   }
-  
+
   const end = process.hrtime.bigint();
   const duration = Number(end - start) / 1000000; // Convert to milliseconds
-  
+
   return c.json({
     runtime: 'Node.js',
     operation: 'Sum 1M integers',
@@ -77,6 +77,14 @@ app.get('/health', (c) => {
     version: process.version,
     uptime: `${process.uptime()}s`,
     memoryUsage: process.memoryUsage()
+  });
+});
+
+app.post('/echo', async (c) => {
+  const body = await c.req.json();
+  return c.json({
+    message: 'Echo from Node.js container',
+    body: body
   });
 });
 
